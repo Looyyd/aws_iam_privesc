@@ -494,6 +494,55 @@ def main(args):
             ]
         ],
 
+        #EFS
+        "ECSResetToDefaulAccess": [
+            [
+                "elasticfilesystem:DeleteFileSystemPolicy",
+                "elasticfilesystem:PutFileSystemPolicy"
+            ]
+        ],
+
+        "ECSMount": [
+            [
+                "elasticfilesystem:ClientMount",
+                "elasticfilesystem:ClientRootAccess",
+                "elasticfilesystem:ClientWrite"
+            ]
+        ],
+
+        "EFSCreateMountTarget": [
+            "elasticfilesystem:CreateMountTarget"
+        ],
+
+        "EFSChangeSecurityGroup": [
+            "elasticfilesystem:ModifyMountTargetSecurityGroups"
+        ],
+
+        # Beanstalk TODO
+
+
+        # EMR
+        "EMRPassrole": [
+            "iam:PassRole",
+            "elasticmapreduce:RunJobFlow"
+        ],
+
+        "EMRNotebookPassRole": [
+            "elasticmapreduce:CreateEditor",
+            "iam:ListRoles",
+            "elasticmapreduce:ListClusters",
+            "iam:PassRole",
+            "elasticmapreduce:DescribeEditor",
+            "elasticmapreduce:OpenEditorInConsole"
+        ],
+
+        "EMRStealNotebookRole": [
+            "elasticmapreduce:OpenEditorInConsole"
+        ],
+
+
+
+
         "CreateNewPolicyVersion": [
             "iam:CreatePolicyVersion"
         ],
