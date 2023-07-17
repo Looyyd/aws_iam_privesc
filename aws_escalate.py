@@ -347,7 +347,7 @@ def main(args):
             print('  No methods possible.\n')
 
     now = time.time()
-    headers = 'CreateNewPolicyVersion,SetExistingDefaultPolicyVersion,CreateEC2WithExistingIP,CreateAccessKey,CreateLoginProfile,UpdateLoginProfile,AttachUserPolicy,AttachGroupPolicy,AttachRolePolicy,PutUserPolicy,PutGroupPolicy,PutRolePolicy,AddUserToGroup,UpdateRolePolicyToAssumeIt,PassExistingRoleToNewLambdaThenInvoke,PassExistingRoleToNewLambdaThenTriggerWithNewDynamo,PassExistingRoleToNewLambdaThenTriggerWithExistingDynamo,PassExistingRoleToNewGlueDevEndpoint,UpdateExistingGlueDevEndpoint,PassExistingRoleToCloudFormation,PassExistingRoleToNewDataPipeline,EditExistingLambdaFunctionWithRole'
+
     file = open('all_user_privesc_scan_results_{}.csv'.format(now), 'w+')
     for user in users:
         if 'admin' in user['CheckedMethods']:
@@ -355,7 +355,7 @@ def main(args):
         else:
             file.write(',{}'.format(user['UserName']))
     file.write('\n')
-    for method in headers.split(','):
+    for method in escalation_methods.keys():
         file.write('{},'.format(method))
         for user in users:
             if method in user['CheckedMethods']['Confirmed']:
