@@ -209,6 +209,7 @@ def main(args):
         "CreateCodebuildWithExistingIP": [
             "iam:PassRole",
             "codebuild:CreateProject",
+            # Either of these works:
             ["codebuild:StartBuild", "codebuild:StartBuildBatch"]
         ],
 
