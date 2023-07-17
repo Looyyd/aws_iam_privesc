@@ -185,115 +185,106 @@ def main(args):
 
 
     escalation_methods = {
-        'CreateNewPolicyVersion': {
-            'iam:CreatePolicyVersion': True
-        },
-        'SetExistingDefaultPolicyVersion': {
-            'iam:SetDefaultPolicyVersion': True
-        },
-        'CreateEC2WithExistingIP': {
-            'iam:PassRole': True,
-            'ec2:RunInstances': True
-        },
-        'CreateAccessKey': {
-            'iam:CreateAccessKey': True
-        },
-        'CreateLoginProfile': {
-            'iam:CreateLoginProfile': True
-        },
-        'UpdateLoginProfile': {
-            'iam:UpdateLoginProfile': True
-        },
-        'AttachUserPolicy': {
-            'iam:AttachUserPolicy': True
-        },
-        'AttachGroupPolicy': {
-            'iam:AttachGroupPolicy': True
-        },
-        'AttachRolePolicy': {
-            'iam:AttachRolePolicy': True,
-            'sts:AssumeRole': True
-        },
-        'PutUserPolicy': {
-            'iam:PutUserPolicy': True
-        },
-        'PutGroupPolicy': {
-            'iam:PutGroupPolicy': True
-        },
-        'PutRolePolicy': {
-            'iam:PutRolePolicy': True,
-            'sts:AssumeRole': True
-        },
-        'AddUserToGroup': {
-            'iam:AddUserToGroup': True
-        },
-        'UpdateRolePolicyToAssumeIt': {
-            'iam:UpdateAssumeRolePolicy': True,
-            'sts:AssumeRole': True
-        },
-        'PassExistingRoleToNewLambdaThenInvoke': {
-            'iam:PassRole': True,
-            'lambda:CreateFunction': True,
-            'lambda:InvokeFunction': True
-        },
-        'PassExistingRoleToNewLambdaThenTriggerWithNewDynamo': {
-            'iam:PassRole': True,
-            'lambda:CreateFunction': True,
-            'lambda:CreateEventSourceMapping': True,
-            'dynamodb:CreateTable': True,
-            'dynamodb:PutItem': True
-        },
-        'PassExistingRoleToNewLambdaThenTriggerWithExistingDynamo': {
-            'iam:PassRole': True,
-            'lambda:CreateFunction': True,
-            'lambda:CreateEventSourceMapping': True
-        },
-        'PassExistingRoleToNewGlueDevEndpoint': {
-            'iam:PassRole': True,
-            'glue:CreateDevEndpoint': True
-        },
-        'UpdateExistingGlueDevEndpoint': {
-            'glue:UpdateDevEndpoint': True
-        },
-        'PassExistingRoleToCloudFormation': {
-            'iam:PassRole': True,
-            'cloudformation:CreateStack': True
-        },
-        'PassExistingRoleToNewDataPipeline': {
-            'iam:PassRole': True,
-            'datapipeline:CreatePipeline': True
-        },
-        'EditExistingLambdaFunctionWithRole': {
-            'lambda:UpdateFunctionCode': True
-        },
-        'CreateCodestarProjectFromTemplate': {
-            'codestar:CreateProjectFromTemplate': True
-        },
-        'PassRoleToNewCodestarProject': {
-            'codestar:CreateProject': True,
-            'iam:PassRole': True
-        },
-        'AssociateTeammemberToCodestarProject': {
-            'codestar:CreateProject': True,
-            'codestar:AssociateTeamMember': True
-        },
-        'PassRoleToNewSagemakerBook': {
-            'iam:PassRole': True,
-            'sagemaker:CreateNotebookInstance': True,
-            'sagemaker:CreatePresignedNotebookInstanceUrl': True
-        },
-        'AccessExistingSagemakerBook': {
-            'sagemaker:CreatePresignedNotebookInstanceUrl': True
-        },
-        'GetFederationTokenID': {
-            'sts:GetFederationToken': True
-        }
-    }
+        "GenerateAPIKeys": [
+            "apigateway:POST"
+        ],
+        "GetGeneratedAPIKeys": [
+            "apigateway:GET"
+        ],
+        "CreateNewPolicyVersion": [
+            "iam:CreatePolicyVersion"
+        ],
+        "SetExistingDefaultPolicyVersion": [
+            "iam:SetDefaultPolicyVersion"
+        ],
+        "CreateEC2WithExistingIP": [
+            "iam:PassRole",
+            "ec2:RunInstances"
+        ],
+        "CreateAccessKey": [
+            "iam:CreateAccessKey"
+        ],
+        "CreateLoginProfile": [
+            "iam:CreateLoginProfile"
+        ],
+        "UpdateLoginProfile": [
+            "iam:UpdateLoginProfile"
+        ],
+        "AttachUserPolicy": [
+            "iam:AttachUserPolicy"
+        ],
+        "AttachGroupPolicy": [
+            "iam:AttachGroupPolicy"
+        ],
+        "AttachRolePolicy": [
+            "iam:AttachRolePolicy",
+            "sts:AssumeRole"
+        ],
+        "PutUserPolicy": [
+            "iam:PutUserPolicy"
+        ],
+        "PutGroupPolicy": [
+            "iam:PutGroupPolicy"
+        ],
+        "PutRolePolicy": [
+            "iam:PutRolePolicy",
+            "sts:AssumeRole"
+        ],
+        "AddUserToGroup": [
+            "iam:AddUserToGroup"
+        ],
+        "UpdateRolePolicyToAssumeIt": [
+            "iam:UpdateAssumeRolePolicy",
+            "sts:AssumeRole"
+        ],
+        "PassExistingRoleToNewLambdaThenInvoke": [
+            "iam:PassRole",
+            "lambda:CreateFunction",
+            "lambda:InvokeFunction"
+        ],
+        "PassExistingRoleToNewLambdaThenTriggerWithNewDynamo": [
+            "iam:PassRole",
+            "lambda:CreateFunction",
+            "lambda:CreateEventSourceMapping",
+            "dynamodb:CreateTable",
+            "dynamodb:PutItem"
+        ],
+        "PassExistingRoleToNewLambdaThenTriggerWithExistingDynamo": [
+            "iam:PassRole",
+            "lambda:CreateFunction",
+            "lambda:CreateEventSourceMapping"
+        ],
+        "PassExistingRoleToNewGlueDevEndpoint": [
+            "iam:PassRole",
+            "glue:CreateDevEndpoint"
+        ],
+        "UpdateExistingGlueDevEndpoint": [
+            "glue:UpdateDevEndpoint"
+        ],
+        "EditExistingLambdaFunctionWithRole": [
+            "lambda:UpdateFunctionCode"
+        ],
+        "CreateCodestarProjectFromTemplate": [
+            "codestar:CreateProjectFromTemplate"
+        ],
+        "PassRoleToNewCodestarProject": [
+            "codestar:CreateProject",
+            "iam:PassRole"
+        ],
+        "AssociateTeammemberToCodestarProject": [
+            "codestar:CreateProject",
+            "sagemaker:CreatePresignedNotebookInstanceUrl"
+        ],
+        "GetFederationTokenID": [
+            "sts:GetFederationToken"
+        ]
+    }  
+
 
     # Extract all permissions from the combinations
     all_perms = set()
     for combination in escalation_methods.values():
-        for permission in combination.keys():
+        for permission in combination:
             all_perms.add(permission)
 
     import re
