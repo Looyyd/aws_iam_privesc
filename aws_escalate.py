@@ -360,16 +360,73 @@ def main(args):
             ]
         ],
 
+        # Datapipeline
+        "PipelinePassRole": [
+            "iam:PassRole",
+            "datapipeline:CreatePipeline",
+            "datapipeline:PutPipelineDefinition",
+            "datapipeline:ActivatePipeline"
+        ],
+
+        # Directory Services
+
+        "DirectoryServicesPasswordReset": [
+            "ds:ResetUserPassword"
+        ],
+
+        # EBS
+
+        "EBSDumpSnapshots": [
+            "ebs:ListSnapshotBlocks",
+            "ebs:GetSnapshotBlock",
+            "ec2:DescribeSnapshots"
+        ],
+
+        "EBSDomainControllerStealSnapshot": [
+            "ec2:CreateSnapshot"
+        ],
+
+
+        # EC2
+        "CreateEC2WithExistingIP": [
+            "iam:PassRole",
+            "ec2:RunInstances"
+        ],
+
+        "EC2ChangeRoleOfInstance": [
+            "iam:PassRole",
+            "iam:AddRoleToInstanceProfile"
+        ],
+
+        "EC2SpotInstanceWithExitingIP": [
+            "ec2:RequestSpotInstances",
+            "iam:PassRole"
+        ],
+
+        "EC2ModifyAttributeRevShell": [
+            "ec2:ModifyInstanceAttribute"
+        ],
+
+        "EC2RevshellLaunchTemplateWithRole": [
+            "autoscaling:CreateLaunchConfiguration",
+            "autoscaling:CreateAutoScalingGroup",
+            "iam:PassRole"
+        ],
+
+        "EC2SSHKey": [
+            "ec2-instance-connect:SendSSHPublicKey"
+        ],
+
+        "EC2SerialConsoleSSH": [
+            "ec2-instance-connect:SendSerialConsoleSSHPublicKey"
+        ],
+
 
         "CreateNewPolicyVersion": [
             "iam:CreatePolicyVersion"
         ],
         "SetExistingDefaultPolicyVersion": [
             "iam:SetDefaultPolicyVersion"
-        ],
-        "CreateEC2WithExistingIP": [
-            "iam:PassRole",
-            "ec2:RunInstances"
         ],
         "CreateAccessKey": [
             "iam:CreateAccessKey"
