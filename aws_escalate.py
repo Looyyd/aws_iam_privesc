@@ -183,45 +183,6 @@ def main(args):
 
     print('  Done.\n')
 
-    # Begin privesc scanning
-    all_perms = [
-        'iam:AddUserToGroup',
-        'iam:AttachGroupPolicy',
-        'iam:AttachRolePolicy',
-        'iam:AttachUserPolicy',
-        'iam:CreateAccessKey',
-        'iam:CreatePolicyVersion',
-        'iam:CreateLoginProfile',
-        'iam:PassRole',
-        'iam:PutGroupPolicy',
-        'iam:PutRolePolicy',
-        'iam:PutUserPolicy',
-        'iam:SetDefaultPolicyVersion',
-        'iam:UpdateAssumeRolePolicy',
-        'iam:UpdateLoginProfile',
-        'sts:AssumeRole',
-        'ec2:RunInstances',
-        'lambda:CreateEventSourceMapping',
-        'lambda:CreateFunction',
-        'lambda:InvokeFunction',
-        'lambda:UpdateFunctionCode',
-        'dynamodb:CreateTable',
-        'dynamodb:PutItem',
-        'glue:CreateDevEndpoint',
-        'glue:UpdateDevEndpoint',
-        'cloudformation:CreateStack',
-        'datapipeline:CreatePipeline',
-        'lambda:UpdateFunctionConfiguration',
-        'sagemaker:CreateNotebookInstance',
-        'sagemaker:CreatePresignedNotebookInstanceUrl',
-        'sagemaker:ListNotebookInstances',
-        'datapipeline:PutPipelineDefinition',
-        'codestar:CreateProjectFromTemplate',
-        'codestar:CreateProject',
-        'codestar:AssociateTeamMember',
-        'codestar:AssociateTeamMember',
-        'sts:GetFederationToken'
-    ]
 
     escalation_methods = {
         'CreateNewPolicyVersion': {
@@ -328,6 +289,13 @@ def main(args):
             'sts:GetFederationToken': True
         }
     }
+
+    # Extract all permissions from the combinations
+    all_perms = set()
+    for combination in escalation_methods.values():
+        for permission in combination.keys():
+            all_perms.add(permission)
+
     import re
     for user in users:
         print('User: {}'.format(user['UserName']))
