@@ -540,6 +540,48 @@ def main(args):
             "elasticmapreduce:OpenEditorInConsole"
         ],
 
+        #gamelift
+
+        "GameliftGetS3UploadCredentials":[
+            "gamelift:RequestUploadCredentials"
+        ],
+
+        #glue
+
+        "GlueCreateAndPassRole": [
+            "iam:PassRole",
+            "glue:CreateDevEndpoint",
+            [
+                "glue:GetDevEndpoint",
+                "glue:GetDevEndpoints"
+            ]
+        ],
+
+        "GlueUpdateSSHKey": [
+            "glue:UpdateDevEndpoint",
+            [
+                "glue:GetDevEndpoint",
+                "glue:GetDevEndpoints"
+            ]
+        ],
+
+        "GlueJobPassRole": [
+            "iam:PassRole",
+            [
+                "glue:CreateJob",
+                "glue:UpdateJob"
+            ], 
+            [
+                "glue:StartJobRun",
+                "glue:CreateTrigger"
+            ]
+        ],
+
+        "GlueStealCredentialOfAttachedRole":[
+            "glue:UpdateJob"
+        ],
+
+
 
 
 
