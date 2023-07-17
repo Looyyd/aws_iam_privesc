@@ -421,6 +421,78 @@ def main(args):
             "ec2-instance-connect:SendSerialConsoleSSHPublicKey"
         ],
 
+        # ECR
+        "ECRDownloadImages": [
+            "ecr:GetAuthorizationToken",
+            "ecr:BatchGetImage"
+        ],
+
+        "ECRUploadImages":[
+            "ecr:GetAuthorizationToken",
+            "ecr:BatchCheckLayerAvailability",
+            "ecr:CompleteLayerUpload",
+            "ecr:InitiateLayerUpload",
+            "ecr:PutImage",
+            "ecr:UploadLayerPart"
+        ],
+
+        "ECRPublicUploadImages": [
+            "ecr-public:GetAuthorizationToken",
+            "ecr-public:BatchCheckLayerAvailability",
+            "ecr-public:CompleteLayerUpload", 
+            "ecr-public:InitiateLayerUpload",
+            "ecr-public:PutImage",
+            "ecr-public:UploadLayerPart"
+        ],
+
+        "ECRSetRepositoryPolicy": [
+            [
+                "ecr:SetRepositoryPolicy",
+                "ecr-public:SetRepositoryPolicy",
+                "ecr:PutRegistryPolicy"
+            ]
+        ],
+
+        #ECS
+
+        "ECSRegisterTaskPassRole": [
+            "iam:PassRole",
+            "ecs:RegisterTaskDefinition",
+            [
+                "ecs:RunTask",
+                "ecs:StartTask"
+            ]
+        ],
+
+        "ECSServicePassRole":[
+            "iam:PassRole",
+            "ecs:RegisterTaskDefinition",
+            [
+                "ecs:UpdateService",
+                "ecs:CreateService"
+            ]
+        ],
+
+        "ECSRunArbitraryContainer": [
+            "ecs:RegisterTaskDefinition",
+             [
+                "ecs:RunTask",
+                "ecs:StartTask",
+                "ecs:UpdateService",
+                "ecs:CreateService"
+             ]
+        ],
+
+        "ECSRunArbitraryCommand":[
+            "ecs:ExecuteCommand",
+            "ecs:DescribeTasks",
+            [
+                "ecs:RunTask",
+                "ecs:StartTask",
+                "ecs:UpdateService",
+                "ecs:CreateService",
+            ]
+        ],
 
         "CreateNewPolicyVersion": [
             "iam:CreatePolicyVersion"
