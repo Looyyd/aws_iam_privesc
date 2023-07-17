@@ -213,6 +213,78 @@ def main(args):
             ["codebuild:StartBuild", "codebuild:StartBuildBatch"]
         ],
 
+        "ModifyCodeBuildWithExistingIP": [
+            "iam:PassRole",
+            "codebuild:UpdateProject",
+            ["codebuild:StartBuild", "codebuild:StartBuildBatch"]
+        ],
+        
+        # Codepipeline
+        "CreateCodepipeline": [
+            "iam:PassRole",
+            "codepipeline:CreatePipeline",
+            "codebuild:CreateProject",
+            "codepipeline:StartPipelineExecution"
+        ],
+
+        # Codestar
+        "CreateCodestarWithExistingIP": [
+            "iam:PassRole",
+            "codestar:CreateProject"
+        ],
+
+        "CodestarAssociateTeamMember": [
+            "codestar:CreateProject",
+            "codestar:AssociateTeamMember"
+        ],
+
+        "CodestarCreateFromTemplate": [
+            "codestar:CreateProjectFromTemplate"
+        ],
+
+        # Cloudformation
+
+        "CreateCloudformationWithExistingIP": [
+            "iam:PassRole",
+            "cloudformation:CreateStack"
+        ],
+
+        "ChangeCloudformationWithExistingIP": [
+            "iam:PassRole",
+            [
+                "cloudformation:UpdateStack",
+                "cloudformation:SetStackPolicy"
+            ]
+        ],
+
+        "CloudformationAbuseAlreadyAttachedRole": [
+            [
+                "cloudformation:UpdateStack",
+                "cloudformation:SetStackPolicy"
+            ]
+        ],
+
+        "CloudformationChangeSetWithExistingIP": [
+            "iam:PassRole",
+            "cloudformation:CreateChangeSet",
+            "cloudformation:ExecuteChangeSet"
+        ],
+        "CloudformationSetStackPolicyWithExistingIP": [
+            "iam:PassRole",
+            "cloudformation:SetStackPolicy"
+        ],
+
+        "CloudformationSetStackAttachedIP":[
+            "cloudformation:SetStackPolicy"
+        ],
+        "CloudformationChangeSetExistingIP": [
+            "cloudformation:CreateChangeSet",
+            "cloudformation:ExecuteChangeSet"
+        ],
+
+
+
+
 
         "CreateNewPolicyVersion": [
             "iam:CreatePolicyVersion"
