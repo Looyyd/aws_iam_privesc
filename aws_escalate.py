@@ -282,8 +282,83 @@ def main(args):
             "cloudformation:ExecuteChangeSet"
         ],
 
+        # Cognito
 
+        "GrantCognitoRole": [
+            "cognito-identity:SetIdentityPoolRoles",
+            "iam:PassRole"
+        ],
 
+        "CognitoUpdateIdentityPool": [
+            "cognito-identity:update-identity-pool"
+        ],
+
+        "CognitoAddToGroup": [
+            "cognito-idp:AdminAddUserToGroup"
+        ],
+
+        "CognitoPassRole": [
+            "iam:PassRole",
+            [
+                "cognito-idp:CreateGroup",
+                "cognito-idp:UpdateGroup"
+            ]
+        ],
+
+        "CognitoConfirmSignup": [
+            "cognito-idp:AdminConfirmSignUp"
+        ],
+
+        "CognitoAdminCreateUser": [
+            "cognito-idp:AdminCreateUser"
+        ],
+
+        "CognitoAdminEnableUser": [
+            "cognito-idp:AdminEnableUser"
+        ],
+
+        "CognitoAdminUserPasswordAuth": [
+            "cognito-idp:AdminInitiateAuth",
+            "cognito-idp:AdminRespondToAuthChallenge"
+        ],
+
+        "CognitoSetUserPassword": [
+            "cognito-idp:AdminSetUserPassword"
+        ],
+
+        "CognitoMFA": [
+            [
+                "cognito-idp:AdminSetUserSettings",
+                "cognito-idp:SetUserMFAPreference",
+                "cognito-idp:SetUserPoolMfaConfig",
+                "cognito-idp:UpdateUserPool"
+            ]
+        ],
+
+        "CognitoUpdateAttributes": [
+            "cognito-idp:AdminUpdateUserAttributes"
+        ],
+
+        "CognitoUserPoolMisconfiguration": [
+            [
+                "cognito-idp:CreateUserPoolClient",
+                "cognito-idp:UpdateUserPoolClient"
+            ]
+        ],
+
+        "CognitoAbuseJobs": [
+            [
+                "cognito-idp:CreateUserImportJob",
+                "cognito-idp:StartUserImportJob"
+            ]
+        ],
+
+        "CognitoAbuseIdentityProvider": [
+            [
+                "cognito-idp:CreateIdentityProvider",
+                "cognito-idp:UpdateIdentityProvider"
+            ]
+        ],
 
 
         "CreateNewPolicyVersion": [
