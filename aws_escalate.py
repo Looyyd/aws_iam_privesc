@@ -185,12 +185,34 @@ def main(args):
 
 
     escalation_methods = {
+        # Api Gateway
+        # https://cloud.hacktricks.xyz/pentesting-cloud/aws-security/aws-privilege-escalation/aws-apigateway-privesc
         "GenerateAPIKeys": [
             "apigateway:POST"
         ],
         "GetGeneratedAPIKeys": [
             "apigateway:GET"
         ],
+        "ChangeAPIPolicy": [
+            "apigateway:UpdateRestApiPolicy",
+            "apigateway:PATCH"
+        ],
+        # skipped this because "Need Testing"
+        # apigateway:PutIntegration, apigateway:CreateDeployment, iam:PassRole
+
+        "AccessPrivateAPI": [
+            "apigateway:UpdateVpcLink"
+        ],
+
+        # Codebuild
+
+        "CreateCodebuildWithExistingIP": [
+            "iam:PassRole",
+            "codebuild:CreateProject",
+            ["codebuild:StartBuild", "codebuild:StartBuildBatch"]
+        ],
+
+
         "CreateNewPolicyVersion": [
             "iam:CreatePolicyVersion"
         ],
@@ -284,8 +306,10 @@ def main(args):
     # Extract all permissions from the combinations
     all_perms = set()
     for combination in escalation_methods.values():
-        for permission in combination:
-            all_perms.add(permission)
+        for perm in combination:
+            permissions_to_add = array_or_string_to_array_of_strings(perm)
+            for permission in permissions_to_add:
+                all_perms.add(permission)
 
     import re
     for user in users:
@@ -309,33 +333,48 @@ def main(args):
                                 if pattern.search(perm) is not None:
                                     checked_perms[effect][perm] = user['Permissions'][effect][user_perm]
 
+        # Ditch each escalation method that has been confirmed not to be possible
         checked_methods = {
             'Potential': [],
             'Confirmed': []
         }
 
-        # Ditch each escalation method that has been confirmed not to be possible
-        for method in escalation_methods:
+        for method in escalation_methods.keys():
             potential = True
             confirmed = True
-            for perm in escalation_methods[method]:
-                if perm not in checked_perms['Allow']: # If this permission isn't Allowed, then this method won't work
+            permissions = escalation_methods[method]  # Get the permissions for the method
+
+            for permission_options in permissions:
+                permissions_options_to_check = array_or_string_to_array_of_strings(permission_options)
+
+                option_confirmed = False
+                option_potential = False
+                for p in permissions_options_to_check:
+                    if p in checked_perms['Allow'] and p not in checked_perms['Deny']:
+                        option_potential = True
+                        if checked_perms['Allow'][p] == ['*']:
+                            option_confirmed = True
+
+                if not option_confirmed:
+                    confirmed = False
+                if not option_potential:  # If no potential, then no need to continue checking
                     potential = confirmed = False
                     break
-                elif perm in checked_perms['Deny'] and perm in checked_perms['Allow']: # Permission is both Denied and Allowed, leave as potential, not confirmed
-                    confirmed = False
-                elif perm in checked_perms['Allow'] and perm not in checked_perms['Deny']: # It is Allowed and not Denied
-                    if not checked_perms['Allow'][perm] == ['*']:
-                        confirmed = False
-            if confirmed is True:
+
+
+            if confirmed:
                 print('  CONFIRMED: {}\n'.format(method))
                 checked_methods['Confirmed'].append(method)
-            elif potential is True:
+            elif potential:
                 print('  POTENTIAL: {}\n'.format(method))
                 checked_methods['Potential'].append(method)
+
         user['CheckedMethods'] = checked_methods
-        if checked_methods['Potential'] == [] and checked_methods['Confirmed'] == []:
+
+        if not checked_methods['Potential'] and not checked_methods['Confirmed']:
             print('  No methods possible.\n')
+
+
 
     now = time.time()
 
@@ -358,6 +397,13 @@ def main(args):
         file.write('\n')
     file.close()
     print('Privilege escalation check completed. Results stored to ./all_user_privesc_scan_results_{}.csv'.format(now))
+
+def array_or_string_to_array_of_strings(perm):
+    if isinstance(perm, str):
+        return [perm]  # Single option
+    else:
+        return perm  # Multiple choices
+
 
 # https://stackoverflow.com/a/24893252
 def remove_empty_from_dict(d):
