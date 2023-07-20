@@ -65,7 +65,7 @@ def main(args):
                 while 'IsTruncated' in res and res['IsTruncated'] is True:
                     res = client.list_groups_for_user(
                         UserName=user['UserName'],
-                        Marker=groups['Marker']
+                        Marker=res['Marker']
                     )
                     user['Groups'] += res['Groups']
             except Exception as e:
