@@ -743,6 +743,65 @@ def main(args):
             ]
         ],
 
+        # Mediapackage
+        "MediapackageChannelChangePassword":[
+            "mediapackage:RotateChannelCredentials"
+            "mediapackage:RotateIngestEndpointCredentials"
+        ],
+
+        # MQ
+        "ActiveMQCreateUser1": [
+            "mq:ListBrokers",
+            "mq:CreateUser"
+        ],
+        "ActiveMQCreateUser2": [
+            "mq:ListBrokers",
+            "mq:ListUsers",
+            "mq:UpdateUser"
+        ],
+        "MQChangeLDAPConfiguration": [
+            "mq:ListBrokers",
+            "mq:UpdateBroker"
+        ],
+
+        # MSK
+        "MSKAccessKafkaVPC": [
+            "msk:ListClusters",
+            "msk:UpdateSecurity"
+        ],
+
+        # RDS
+        "RDSChangeMasterPassword": [
+            "rds:ModifyDBInstance"
+        ],
+
+        "RDSConnectToDBInstance": [
+            "rds-db:connect"
+        ],
+
+        "RDSAddRoleToInstance": [
+            "rds:AddRoleToDBCluster",
+            "iam:PassRole"
+        ],
+
+        "RDSCreateDBInstance": [
+            "rds:CreateDBInstance"
+        ],
+
+        "RDSCreateInstanceWithRole": [
+            "rds:CreateDBInstance",
+            "iam:PassRole"
+        ],
+        "RDSAddRoleToExistingInstance": [
+            "rds:AddRoleToDBInstance",
+            "iam:PassRole"
+        ],
+
+
+
+
+
+
 
 
         
