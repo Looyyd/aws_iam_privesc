@@ -703,6 +703,48 @@ def main(args):
             "lambda:UpdateFunctionConfiguration"
         ],
 
+
+        #LightSail
+        "GetLightsailSSHKeys": [
+            "lightsail:DownloadDefaultKeyPair"
+        ],
+        "GenerateLightsailSSHKeys": [
+            "lightsail:GetInstanceAccessDetails"
+        ],
+        "LightsailCreateBucketKey": [
+            "lightsail:CreateBucketAccessKey"
+        ],
+        "LightsailDBAccess": [
+            "lightsail:GetRelationalDatabaseMasterUserPassword"
+        ],
+        "LightsailChangePasswordRelationalDatabase": [
+            "lightsail:UpdateRelationalDatabase"
+        ],
+        "LightsailOpenPorts":[
+            "lightsail:OpenInstancePublicPorts"
+        ],
+
+        "LightsailPutInstancePublicPorts": [
+            "lightsail:OpenInstancePublicPorts"
+        ],
+        "LightsailGiveAccessToBucket": [
+            [
+                "lightsail:SetResourceAccessForBucket",
+                "lightsail:UpdateBucket"
+            ]
+        ],
+        "LightsailECRGrantAccess": [
+            "lightsail:UpdateContainerService"
+        ],
+        "LightsailSubdomainTakeover": [
+            [ 
+                "lightsail:CreateDomainEntry",
+                "lightsail:UpdateDomainEntry"
+            ]
+        ],
+
+
+
         
 
         # TODO: delete those?
