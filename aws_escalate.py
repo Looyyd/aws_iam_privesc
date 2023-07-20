@@ -2,8 +2,8 @@
 
 #!/usr/bin/env python3
 from __future__ import print_function
-import boto3, argparse, os, sys, json, time
-from botocore.exceptions import ClientError
+import boto3, argparse, time
+import re
 
 def main(args):
     access_key_id = args.access_key_id
@@ -991,7 +991,6 @@ def main(args):
             for permission in permissions_to_add:
                 all_perms.add(permission)
 
-    import re
     for user in users:
         print('User: {}'.format(user['UserName']))
         checked_perms = {'Allow': {}, 'Deny': {}}
