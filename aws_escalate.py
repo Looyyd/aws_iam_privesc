@@ -864,6 +864,60 @@ def main(args):
             ]
         ],
 
+        # S3
+
+        "S3PutObject": [
+            "s3:PutObject",
+            "s3:GetObject"
+        ],
+
+        "S3PutBucketPolicy": [
+            "s3:PutBucketPolicy"
+        ],
+        "S3ChangeBucketACL": [
+            "s3:GetBucketAcl",
+            "s3:PutBucketAcl"
+        ],
+
+        "S3ChangeObjectACL": [
+            "s3:GetObjectAcl",
+            "s3:PutObjectAcl"
+        ],
+        "S3PutACLToSpecifiedVersion": [
+            "s3:GetObjectAcl",
+            "s3:PutObjectVersionAcl"
+        ],
+
+        # SageMaker
+        "SagemakerNotebookPassRole": [
+            "iam:PassRole",
+            "sagemaker:CreateNotebookInstance",
+            "sagemaker:CreatePresignedNotebookInstanceUrl"
+        ],
+        "SagemakerGetNotebookURLAccess": [
+            "sagemaker:CreatePresignedNotebookInstanceUrl"
+        ],
+        "SagemakerJobPassrole": [
+            [
+                "sagemaker:CreateProcessingJob",
+                "sagemaker:CreateTrainingJob",
+                "CreateHyperParameterTuningJob"
+            ],
+            "iam:PassRole"
+        ],
+
+
+        # Secret manager privesc
+
+        "SecretManagerGetValue": [
+            "secretsmanager:GetSecretValue"
+        ],
+        "SecretPolicyGiveAccess": [
+            "secretsmanager:GetResourcePolicy",
+            "secretsmanager:PutResourcePolicy"
+        ],
+
+
 
 
 
