@@ -582,9 +582,7 @@ def main(args):
         ],
 
 
-
-
-
+        # IAM
         "CreateNewPolicyVersion": [
             "iam:CreatePolicyVersion"
         ],
@@ -594,11 +592,20 @@ def main(args):
         "CreateAccessKey": [
             "iam:CreateAccessKey"
         ],
+        "UpdateAccessKey": [
+            "iam:UpdateAccessKey"
+        ],
         "CreateLoginProfile": [
             "iam:CreateLoginProfile"
         ],
         "UpdateLoginProfile": [
             "iam:UpdateLoginProfile"
+        ],
+        "CreateServiceSpecificCredential": [
+            "iam:CreateServiceSpecificCredential"
+        ],
+        "ResetServiceSpecificCredential": [
+            "iam:ResetServiceSpecificCredential"
         ],
         "AttachUserPolicy": [
             "iam:AttachUserPolicy"
@@ -627,10 +634,49 @@ def main(args):
             "iam:UpdateAssumeRolePolicy",
             "sts:AssumeRole"
         ],
+        "UploadSSHPublicKey": [
+            "iam:UploadSSHPublicKey"
+        ],
+        "DeactivateMFADevice": [
+            "iam:DeactivateMFADevice"
+        ],
+        "ResyncMFADevice": [
+            "iam:ResyncMFADevice"
+        ],
+        "AbuseSAMLConnection": [
+            "iam:UpdateSAMLProvider",
+            "iam:ListSAMLProviders",
+        ],
+        
+        #kms
+        "ModifyKeyAccessPermission":[
+            "kms:ListKeys",
+            "kms:PutKeyPolicy",
+        ],
+        "CreateGrant":[
+            "kms:CreateGrant"
+        ],
+        "ReplicateKey": [
+            "kms:CreateKey",
+            "kms:ReplicateKey"
+        ],
+        "DecryptKey":[
+            "kms:Decrypt"
+        ],
+
+        # Lambda
         "PassExistingRoleToNewLambdaThenInvoke": [
             "iam:PassRole",
             "lambda:CreateFunction",
-            "lambda:InvokeFunction"
+            [
+                "lambda:InvokeFunction",
+                "lambda:InvokeFunctionUrl",
+            ]
+        ],
+        "GrantYourselfInvokeFunction": [
+            "iam:PassRole",
+            "lambda:CreateFunction",
+            "lambda:AddPermission"
         ],
         "PassExistingRoleToNewLambdaThenTriggerWithNewDynamo": [
             "iam:PassRole",
@@ -644,15 +690,24 @@ def main(args):
             "lambda:CreateFunction",
             "lambda:CreateEventSourceMapping"
         ],
-        "PassExistingRoleToNewGlueDevEndpoint": [
-            "iam:PassRole",
-            "glue:CreateDevEndpoint"
-        ],
-        "UpdateExistingGlueDevEndpoint": [
-            "glue:UpdateDevEndpoint"
+        "LambdaAddPermission":{
+            "lambda:AddPermission"
+        },
+        "AddLayerVersionPermission": [
+            "lambda:AddLayerVersionPermission"
         ],
         "EditExistingLambdaFunctionWithRole": [
             "lambda:UpdateFunctionCode"
+        ],
+        "UpdateFunctionConfiguration": [
+            "lambda:UpdateFunctionConfiguration"
+        ],
+
+        
+
+        # TODO: delete those?
+        "UpdateExistingGlueDevEndpoint": [
+            "glue:UpdateDevEndpoint"
         ],
         "CreateCodestarProjectFromTemplate": [
             "codestar:CreateProjectFromTemplate"
