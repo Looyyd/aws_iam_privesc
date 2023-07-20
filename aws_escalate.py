@@ -797,8 +797,72 @@ def main(args):
             "iam:PassRole"
         ],
 
+        # Redshift
+        "RedshiftGetClusterCredential": [
+            "redshift:DescribeClusters",
+            [
+                "redshift:GetClusterCredentialsWithIAM",
+                "redshift:GetClusterCredentials"
+            ]
+        ],
+        "RedshiftModifyClusterCredential": [
+            "redshift:DescribeClusters",
+            "redshift:ModifyCluster"
+        ],
 
+        # SNS
 
+        "SNSSendMessage": [
+            "sns:Publish"
+        ],
+        "SNSSubscribe":[
+            "sns:Subscribe"
+        ],
+        "SNSAddPermission": [
+            "sns:AddPermission"
+        ],
+
+        # SQS
+        "SQSAccessQueue": [
+            "sqs:AddPermission"
+        ],
+        "SQSSendMessage": [
+            "sqs:SendMessage",
+            "sqs:SendMessageBatch"
+        ],
+
+        "SQSDeleteMessage": [
+            "sqs:ReceiveMessage",
+            "sqs:DeleteMessage",
+            "sqs:ChangeMessageVisibility"
+        ],
+
+        # SSO
+        "IdentityStoreAddUserToGroup":[
+            "identitystore:CreateGroupMembership"
+        ],
+
+        "SSOGrantExtraPermissionToExistingPermissionSet": [
+            [
+                "sso:PutInlinePolicyToPermissionSet",
+                "sso:AttachCustomerManagedPolicyReferenceToPermissionSet",
+                "sso:AttachManagedPolicyToPermissionSet"
+            ],
+            "sso:ProvisionPermissionSet"
+        ],
+
+        "SSOCreateAccountAssignment": [
+            "sso:CreateAccountAssignment"
+        ],
+
+        "SSODetachOrDeletePolicy":[
+            [
+                "sso:DetachManagedPolicyFromPermissionSet",
+                "sso:DetachCustomerManagedPolicyReferenceFromPermissionSet",
+                "sso:DeleteInlinePolicyFromPermissionSet",
+                "sso:DeletePermissionBoundaryFromPermissionSet"
+            ]
+        ],
 
 
 
