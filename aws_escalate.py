@@ -980,8 +980,55 @@ def main(args):
         "WorkdocsAddUserToGroup": [
             "workdocs:AddUserToGroup"
         ],
+
+
+        # API calls that return credentials
+        "ChimeCreateAPIKey": ["chime:createapikey"],
+    
+        "CodePipelinePollForJobs": ["codepipeline:pollforjobs"],
+        
+        "CognitoGetOpenIDToken": ["cognito-identity:getopenidtoken"],
+        "CognitoGetOpenIDTokenForDeveloper": ["cognito-identity:getopenidtokenfordeveloperidentity"],
+        "CognitoGetCredentialsForIdentity": ["cognito-identity:getcredentialsforidentity"],
+        
+        "ConnectGetFederationToken": ["connect:getfederationtoken"],
+        "ConnectGetFederationTokens": ["connect:getfederationtokens"],
+        
+        "ECRGetAuthorizationToken": ["ecr:getauthorizationtoken"],
+        
+        "GameLiftRequestUploadCredentials": ["gamelift:requestuploadcredentials"],
+        
+        "IAMCreateAccessKey": ["iam:createaccesskey"],
+        "IAMCreateLoginProfile": ["iam:createloginprofile"],
+        "IAMCreateOrResetServiceSpecificCredential": [
+            [
+                "iam:createservicespecificcredential", 
+                "iam:resetservicespecificcredential"
+            ]
+        ],
+        "IAMUpdateAccessKey": ["iam:updateaccesskey"],
+
+        "LightSailGetInstanceAccessDetails": ["lightsail:getinstanceaccessdetails"],
+        "LightSailGetRelationalDatabasePassword": ["lightsail:getrelationaldatabasemasteruserpassword"],
+
+        "RDSDBConnect": ["rds-db:connect"],
+        
+        "RedShiftGetClusterCredentials": ["redshift:getclustercredentials"],
+        
+        "SSOGetRoleCredentials": ["sso:getrolecredentials"],
+        
+        "MediaPackageRotateChannelCredentials": ["mediapackage:rotatechannelcredentials"],
+        "MediaPackageRotateIngestEndpointCredentials": ["mediapackage:rotateingestendpointcredentials"],
+        
+        "STSGetFederationToken": ["sts:getfederationtoken"],
+        "STSGetSessionToken": ["sts:getsessiontoken"]
     }  
 
+
+    # Filter escalation methods if required
+    privileges_to_filter = args.filter_privilege
+    if privileges_to_filter:
+        escalation_methods = filter_escalation_methods(escalation_methods=escalation_methods, filter_patterns=privileges_to_filter)
 
     # Extract all permissions from the combinations
     all_perms = set()
@@ -1239,6 +1286,42 @@ def parse_document(document, user):
                 user['Permissions']['Allow'][statement['NotAction']] = list(set(user['Permissions']['Allow'][statement['NotAction']])) # Remove duplicate resources
     return user
 
+
+def filter_escalation_methods(escalation_methods, filter_patterns):
+    """
+    Filter out escalation methods based on given regex patterns.
+
+    :param escalation_methods: Dictionary of escalation methods.
+    :param filter_patterns: List of regex patterns to filter out.
+    :return: Filtered dictionary of escalation methods.
+    """
+    filtered_methods = {}
+
+    def matches_any_pattern(privilege):
+        return any(re.search(pattern, privilege, re.IGNORECASE) for pattern in filter_patterns)
+
+    for method, privileges in escalation_methods.items():
+        should_add = True
+        new_privileges = []
+        
+        for priv in privileges:
+            if isinstance(priv, list): # Handling either-or case
+                priv = [p for p in priv if not matches_any_pattern(p)] # Removing privileges that match any regex pattern
+                if not priv: # If list is empty after removal, method should not be added
+                    should_add = False
+                    break
+                new_privileges.append(priv)
+            else:
+                if matches_any_pattern(priv): # Handling single privilege case
+                    should_add = False
+                    break
+                new_privileges.append(priv)
+        
+        if should_add:
+            filtered_methods[method] = new_privileges
+            
+    return filtered_methods
+
 if __name__ == '__main__':
     parser = argparse.ArgumentParser(description='This script will fetch permissions for a set of users and then scan for permission misconfigurations to see what privilege escalation methods are possible. Available attack paths will be output to a .csv file in the same directory.')
     parser.add_argument('--all-users', required=False, default=False, action='store_true', help='Run this module against every user in the account.')
@@ -1246,6 +1329,8 @@ if __name__ == '__main__':
     parser.add_argument('--access-key-id', required=False, default=None, help='The AWS access key ID to use for authentication.')
     parser.add_argument('--secret-key', required=False, default=None, help='The AWS secret access key to use for authentication.')
     parser.add_argument('--session-token', required=False, default=None, help='The AWS session token to use for authentication, if there is one.')
+    parser.add_argument('--filter-privilege', '-f', action='append', help='Privileges to filter out. Can be used multiple times. Supports regex and is case insensitive.', default=[])
+
 
     args = parser.parse_args()
     main(args)
