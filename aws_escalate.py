@@ -917,6 +917,74 @@ def main(args):
             "secretsmanager:PutResourcePolicy"
         ],
 
+        # SSM
+
+        "SSMSendCommand": [
+            "ssm:SendCommand"
+        ],
+
+        "SSMStartSession": [
+            "ssm:StartSession"
+        ],
+
+
+        "SSMResumeSession": [
+            "ssm:ResumeSession"
+        ],
+
+        "SSMReadParameters": [
+            "ssm:DescribeParameters",
+            [
+                "ssm:GetParameter",
+                "ssm:GetParameters"
+            ]
+        ],
+
+        "SSMListCommand": [
+            "ssm:ListCommands"
+        ],
+
+        "SSMListCommandsAndGetOutput": [
+            "ssm:GetCommandInvocation",
+            [
+                "ssm:ListCommandInvocations",
+                "ssm:ListCommands"
+            ]
+        ],
+
+        # STS
+
+        "STSAssumeRole":[
+            "sts:AssumeRole"
+        ],
+        "STSSAMLAssumeRole": [
+            "sts:AssumeRoleWithSAML"
+        ],
+        "STSWebIDAssumeRole": [
+            "sts:AssumeRoleWithWebIdentity"
+        ],
+        "GetFederationTokenID": [
+            "sts:GetFederationToken"
+        ],
+
+        # WorkDoc
+        "WorkdocsCreateUser": [
+            "workdocs:CreateUser"
+        ],
+        "WorkdocsGetDocumet": [
+            "workdocs:GetDocument"
+        ],
+        "WorkdocsAddResourcePermission": [
+            "workdocs:AddResourcePermissions"
+        ],
+        "WorkdocsAddUserToGroup": [
+            "workdocs:AddUserToGroup"
+        ],
+
+
+        
+
+
 
 
 
@@ -924,24 +992,6 @@ def main(args):
 
         
 
-        # TODO: delete those?
-        "UpdateExistingGlueDevEndpoint": [
-            "glue:UpdateDevEndpoint"
-        ],
-        "CreateCodestarProjectFromTemplate": [
-            "codestar:CreateProjectFromTemplate"
-        ],
-        "PassRoleToNewCodestarProject": [
-            "codestar:CreateProject",
-            "iam:PassRole"
-        ],
-        "AssociateTeammemberToCodestarProject": [
-            "codestar:CreateProject",
-            "sagemaker:CreatePresignedNotebookInstanceUrl"
-        ],
-        "GetFederationTokenID": [
-            "sts:GetFederationToken"
-        ]
     }  
 
 
