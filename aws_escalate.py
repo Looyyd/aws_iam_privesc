@@ -980,18 +980,6 @@ def main(args):
         "WorkdocsAddUserToGroup": [
             "workdocs:AddUserToGroup"
         ],
-
-
-        
-
-
-
-
-
-
-
-        
-
     }  
 
 
