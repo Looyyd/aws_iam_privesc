@@ -2,8 +2,8 @@
 
 #!/usr/bin/env python3
 from __future__ import print_function
-import boto3, argparse, os, sys, json, time
-from botocore.exceptions import ClientError
+import boto3, argparse, time
+import re
 
 def main(args):
     access_key_id = args.access_key_id
@@ -183,152 +183,861 @@ def main(args):
 
     print('  Done.\n')
 
-    # Begin privesc scanning
-    all_perms = [
-        'iam:AddUserToGroup',
-        'iam:AttachGroupPolicy',
-        'iam:AttachRolePolicy',
-        'iam:AttachUserPolicy',
-        'iam:CreateAccessKey',
-        'iam:CreatePolicyVersion',
-        'iam:CreateLoginProfile',
-        'iam:PassRole',
-        'iam:PutGroupPolicy',
-        'iam:PutRolePolicy',
-        'iam:PutUserPolicy',
-        'iam:SetDefaultPolicyVersion',
-        'iam:UpdateAssumeRolePolicy',
-        'iam:UpdateLoginProfile',
-        'sts:AssumeRole',
-        'ec2:RunInstances',
-        'lambda:CreateEventSourceMapping',
-        'lambda:CreateFunction',
-        'lambda:InvokeFunction',
-        'lambda:UpdateFunctionCode',
-        'dynamodb:CreateTable',
-        'dynamodb:PutItem',
-        'glue:CreateDevEndpoint',
-        'glue:UpdateDevEndpoint',
-        'cloudformation:CreateStack',
-        'datapipeline:CreatePipeline',
-        'lambda:UpdateFunctionConfiguration',
-        'sagemaker:CreateNotebookInstance',
-        'sagemaker:CreatePresignedNotebookInstanceUrl',
-        'sagemaker:ListNotebookInstances',
-        'datapipeline:PutPipelineDefinition',
-        'codestar:CreateProjectFromTemplate',
-        'codestar:CreateProject',
-        'codestar:AssociateTeamMember',
-        'codestar:AssociateTeamMember',
-        'sts:GetFederationToken'
-    ]
 
     escalation_methods = {
-        'CreateNewPolicyVersion': {
-            'iam:CreatePolicyVersion': True
+        # Api Gateway
+        # https://cloud.hacktricks.xyz/pentesting-cloud/aws-security/aws-privilege-escalation/aws-apigateway-privesc
+        "GenerateAPIKeys": [
+            "apigateway:POST"
+        ],
+        "GetGeneratedAPIKeys": [
+            "apigateway:GET"
+        ],
+        "ChangeAPIPolicy": [
+            "apigateway:UpdateRestApiPolicy",
+            "apigateway:PATCH"
+        ],
+        # skipped this because "Need Testing"
+        # apigateway:PutIntegration, apigateway:CreateDeployment, iam:PassRole
+
+        "AccessPrivateAPI": [
+            "apigateway:UpdateVpcLink"
+        ],
+
+        # Codebuild
+
+        "CreateCodebuildWithExistingIP": [
+            "iam:PassRole",
+            "codebuild:CreateProject",
+            # Either of these works:
+            ["codebuild:StartBuild", "codebuild:StartBuildBatch"]
+        ],
+
+        "ModifyCodeBuildWithExistingIP": [
+            "iam:PassRole",
+            "codebuild:UpdateProject",
+            ["codebuild:StartBuild", "codebuild:StartBuildBatch"]
+        ],
+        
+        # Codepipeline
+        "CreateCodepipeline": [
+            "iam:PassRole",
+            "codepipeline:CreatePipeline",
+            "codebuild:CreateProject",
+            "codepipeline:StartPipelineExecution"
+        ],
+
+        # Codestar
+        "CreateCodestarWithExistingIP": [
+            "iam:PassRole",
+            "codestar:CreateProject"
+        ],
+
+        "CodestarAssociateTeamMember": [
+            "codestar:CreateProject",
+            "codestar:AssociateTeamMember"
+        ],
+
+        "CodestarCreateFromTemplate": [
+            "codestar:CreateProjectFromTemplate"
+        ],
+
+        # Cloudformation
+
+        "CreateCloudformationWithExistingIP": [
+            "iam:PassRole",
+            "cloudformation:CreateStack"
+        ],
+
+        "ChangeCloudformationWithExistingIP": [
+            "iam:PassRole",
+            [
+                "cloudformation:UpdateStack",
+                "cloudformation:SetStackPolicy"
+            ]
+        ],
+
+        "CloudformationAbuseAlreadyAttachedRole": [
+            [
+                "cloudformation:UpdateStack",
+                "cloudformation:SetStackPolicy"
+            ]
+        ],
+
+        "CloudformationChangeSetWithExistingIP": [
+            "iam:PassRole",
+            "cloudformation:CreateChangeSet",
+            "cloudformation:ExecuteChangeSet"
+        ],
+        "CloudformationSetStackPolicyWithExistingIP": [
+            "iam:PassRole",
+            "cloudformation:SetStackPolicy"
+        ],
+
+        "CloudformationSetStackAttachedIP":[
+            "cloudformation:SetStackPolicy"
+        ],
+        "CloudformationChangeSetExistingIP": [
+            "cloudformation:CreateChangeSet",
+            "cloudformation:ExecuteChangeSet"
+        ],
+
+        # Cognito
+
+        "GrantCognitoRole": [
+            "cognito-identity:SetIdentityPoolRoles",
+            "iam:PassRole"
+        ],
+
+        "CognitoUpdateIdentityPool": [
+            "cognito-identity:update-identity-pool"
+        ],
+
+        "CognitoAddToGroup": [
+            "cognito-idp:AdminAddUserToGroup"
+        ],
+
+        "CognitoPassRole": [
+            "iam:PassRole",
+            [
+                "cognito-idp:CreateGroup",
+                "cognito-idp:UpdateGroup"
+            ]
+        ],
+
+        "CognitoConfirmSignup": [
+            "cognito-idp:AdminConfirmSignUp"
+        ],
+
+        "CognitoAdminCreateUser": [
+            "cognito-idp:AdminCreateUser"
+        ],
+
+        "CognitoAdminEnableUser": [
+            "cognito-idp:AdminEnableUser"
+        ],
+
+        "CognitoAdminUserPasswordAuth": [
+            "cognito-idp:AdminInitiateAuth",
+            "cognito-idp:AdminRespondToAuthChallenge"
+        ],
+
+        "CognitoSetUserPassword": [
+            "cognito-idp:AdminSetUserPassword"
+        ],
+
+        "CognitoMFA": [
+            [
+                "cognito-idp:AdminSetUserSettings",
+                "cognito-idp:SetUserMFAPreference",
+                "cognito-idp:SetUserPoolMfaConfig",
+                "cognito-idp:UpdateUserPool"
+            ]
+        ],
+
+        "CognitoUpdateAttributes": [
+            "cognito-idp:AdminUpdateUserAttributes"
+        ],
+
+        "CognitoUserPoolMisconfiguration": [
+            [
+                "cognito-idp:CreateUserPoolClient",
+                "cognito-idp:UpdateUserPoolClient"
+            ]
+        ],
+
+        "CognitoAbuseJobs": [
+            [
+                "cognito-idp:CreateUserImportJob",
+                "cognito-idp:StartUserImportJob"
+            ]
+        ],
+
+        "CognitoAbuseIdentityProvider": [
+            [
+                "cognito-idp:CreateIdentityProvider",
+                "cognito-idp:UpdateIdentityProvider"
+            ]
+        ],
+
+        # Datapipeline
+        "PipelinePassRole": [
+            "iam:PassRole",
+            "datapipeline:CreatePipeline",
+            "datapipeline:PutPipelineDefinition",
+            "datapipeline:ActivatePipeline"
+        ],
+
+        # Directory Services
+
+        "DirectoryServicesPasswordReset": [
+            "ds:ResetUserPassword"
+        ],
+
+        # EBS
+
+        "EBSDumpSnapshots": [
+            "ebs:ListSnapshotBlocks",
+            "ebs:GetSnapshotBlock",
+            "ec2:DescribeSnapshots"
+        ],
+
+        "EBSDomainControllerStealSnapshot": [
+            "ec2:CreateSnapshot"
+        ],
+
+
+        # EC2
+        "CreateEC2WithExistingIP": [
+            "iam:PassRole",
+            "ec2:RunInstances"
+        ],
+
+        "EC2ChangeRoleOfInstance": [
+            "iam:PassRole",
+            "iam:AddRoleToInstanceProfile"
+        ],
+
+        "EC2SpotInstanceWithExitingIP": [
+            "ec2:RequestSpotInstances",
+            "iam:PassRole"
+        ],
+
+        "EC2ModifyAttributeRevShell": [
+            "ec2:ModifyInstanceAttribute"
+        ],
+
+        "EC2RevshellLaunchTemplateWithRole": [
+            "autoscaling:CreateLaunchConfiguration",
+            "autoscaling:CreateAutoScalingGroup",
+            "iam:PassRole"
+        ],
+
+        "EC2SSHKey": [
+            "ec2-instance-connect:SendSSHPublicKey"
+        ],
+
+        "EC2SerialConsoleSSH": [
+            "ec2-instance-connect:SendSerialConsoleSSHPublicKey"
+        ],
+
+        # ECR
+        "ECRDownloadImages": [
+            "ecr:GetAuthorizationToken",
+            "ecr:BatchGetImage"
+        ],
+
+        "ECRUploadImages":[
+            "ecr:GetAuthorizationToken",
+            "ecr:BatchCheckLayerAvailability",
+            "ecr:CompleteLayerUpload",
+            "ecr:InitiateLayerUpload",
+            "ecr:PutImage",
+            "ecr:UploadLayerPart"
+        ],
+
+        "ECRPublicUploadImages": [
+            "ecr-public:GetAuthorizationToken",
+            "ecr-public:BatchCheckLayerAvailability",
+            "ecr-public:CompleteLayerUpload", 
+            "ecr-public:InitiateLayerUpload",
+            "ecr-public:PutImage",
+            "ecr-public:UploadLayerPart"
+        ],
+
+        "ECRSetRepositoryPolicy": [
+            [
+                "ecr:SetRepositoryPolicy",
+                "ecr-public:SetRepositoryPolicy",
+                "ecr:PutRegistryPolicy"
+            ]
+        ],
+
+        #ECS
+
+        "ECSRegisterTaskPassRole": [
+            "iam:PassRole",
+            "ecs:RegisterTaskDefinition",
+            [
+                "ecs:RunTask",
+                "ecs:StartTask"
+            ]
+        ],
+
+        "ECSServicePassRole":[
+            "iam:PassRole",
+            "ecs:RegisterTaskDefinition",
+            [
+                "ecs:UpdateService",
+                "ecs:CreateService"
+            ]
+        ],
+
+        "ECSRunArbitraryContainer": [
+            "ecs:RegisterTaskDefinition",
+             [
+                "ecs:RunTask",
+                "ecs:StartTask",
+                "ecs:UpdateService",
+                "ecs:CreateService"
+             ]
+        ],
+
+        "ECSRunArbitraryCommand":[
+            "ecs:ExecuteCommand",
+            "ecs:DescribeTasks",
+            [
+                "ecs:RunTask",
+                "ecs:StartTask",
+                "ecs:UpdateService",
+                "ecs:CreateService",
+            ]
+        ],
+
+        #EFS
+        "ECSResetToDefaulAccess": [
+            [
+                "elasticfilesystem:DeleteFileSystemPolicy",
+                "elasticfilesystem:PutFileSystemPolicy"
+            ]
+        ],
+
+        "ECSMount": [
+            [
+                "elasticfilesystem:ClientMount",
+                "elasticfilesystem:ClientRootAccess",
+                "elasticfilesystem:ClientWrite"
+            ]
+        ],
+
+        "EFSCreateMountTarget": [
+            "elasticfilesystem:CreateMountTarget"
+        ],
+
+        "EFSChangeSecurityGroup": [
+            "elasticfilesystem:ModifyMountTargetSecurityGroups"
+        ],
+
+        # Beanstalk TODO
+
+
+        # EMR
+        "EMRPassrole": [
+            "iam:PassRole",
+            "elasticmapreduce:RunJobFlow"
+        ],
+
+        "EMRNotebookPassRole": [
+            "elasticmapreduce:CreateEditor",
+            "iam:ListRoles",
+            "elasticmapreduce:ListClusters",
+            "iam:PassRole",
+            "elasticmapreduce:DescribeEditor",
+            "elasticmapreduce:OpenEditorInConsole"
+        ],
+
+        "EMRStealNotebookRole": [
+            "elasticmapreduce:OpenEditorInConsole"
+        ],
+
+        #gamelift
+
+        "GameliftGetS3UploadCredentials":[
+            "gamelift:RequestUploadCredentials"
+        ],
+
+        #glue
+
+        "GlueCreateAndPassRole": [
+            "iam:PassRole",
+            "glue:CreateDevEndpoint",
+            [
+                "glue:GetDevEndpoint",
+                "glue:GetDevEndpoints"
+            ]
+        ],
+
+        "GlueUpdateSSHKey": [
+            "glue:UpdateDevEndpoint",
+            [
+                "glue:GetDevEndpoint",
+                "glue:GetDevEndpoints"
+            ]
+        ],
+
+        "GlueJobPassRole": [
+            "iam:PassRole",
+            [
+                "glue:CreateJob",
+                "glue:UpdateJob"
+            ], 
+            [
+                "glue:StartJobRun",
+                "glue:CreateTrigger"
+            ]
+        ],
+
+        "GlueStealCredentialOfAttachedRole":[
+            "glue:UpdateJob"
+        ],
+
+
+        # IAM
+        "CreateNewPolicyVersion": [
+            "iam:CreatePolicyVersion"
+        ],
+        "SetExistingDefaultPolicyVersion": [
+            "iam:SetDefaultPolicyVersion"
+        ],
+        "CreateAccessKey": [
+            "iam:CreateAccessKey"
+        ],
+        "UpdateAccessKey": [
+            "iam:UpdateAccessKey"
+        ],
+        "CreateLoginProfile": [
+            "iam:CreateLoginProfile"
+        ],
+        "UpdateLoginProfile": [
+            "iam:UpdateLoginProfile"
+        ],
+        "CreateServiceSpecificCredential": [
+            "iam:CreateServiceSpecificCredential"
+        ],
+        "ResetServiceSpecificCredential": [
+            "iam:ResetServiceSpecificCredential"
+        ],
+        "AttachUserPolicy": [
+            "iam:AttachUserPolicy"
+        ],
+        "AttachGroupPolicy": [
+            "iam:AttachGroupPolicy"
+        ],
+        "AttachRolePolicy": [
+            "iam:AttachRolePolicy",
+            "sts:AssumeRole"
+        ],
+        "PutUserPolicy": [
+            "iam:PutUserPolicy"
+        ],
+        "PutGroupPolicy": [
+            "iam:PutGroupPolicy"
+        ],
+        "PutRolePolicy": [
+            "iam:PutRolePolicy",
+            "sts:AssumeRole"
+        ],
+        "AddUserToGroup": [
+            "iam:AddUserToGroup"
+        ],
+        "UpdateRolePolicyToAssumeIt": [
+            "iam:UpdateAssumeRolePolicy",
+            "sts:AssumeRole"
+        ],
+        "UploadSSHPublicKey": [
+            "iam:UploadSSHPublicKey"
+        ],
+        "DeactivateMFADevice": [
+            "iam:DeactivateMFADevice"
+        ],
+        "ResyncMFADevice": [
+            "iam:ResyncMFADevice"
+        ],
+        "AbuseSAMLConnection": [
+            "iam:UpdateSAMLProvider",
+            "iam:ListSAMLProviders",
+        ],
+        
+        #kms
+        "ModifyKeyAccessPermission":[
+            "kms:ListKeys",
+            "kms:PutKeyPolicy",
+        ],
+        "CreateGrant":[
+            "kms:CreateGrant"
+        ],
+        "ReplicateKey": [
+            "kms:CreateKey",
+            "kms:ReplicateKey"
+        ],
+        "DecryptKey":[
+            "kms:Decrypt"
+        ],
+
+        # Lambda
+        "PassExistingRoleToNewLambdaThenInvoke": [
+            "iam:PassRole",
+            "lambda:CreateFunction",
+            [
+                "lambda:InvokeFunction",
+                "lambda:InvokeFunctionUrl",
+            ]
+        ],
+        "GrantYourselfInvokeFunction": [
+            "iam:PassRole",
+            "lambda:CreateFunction",
+            "lambda:AddPermission"
+        ],
+        "PassExistingRoleToNewLambdaThenTriggerWithNewDynamo": [
+            "iam:PassRole",
+            "lambda:CreateFunction",
+            "lambda:CreateEventSourceMapping",
+            "dynamodb:CreateTable",
+            "dynamodb:PutItem"
+        ],
+        "PassExistingRoleToNewLambdaThenTriggerWithExistingDynamo": [
+            "iam:PassRole",
+            "lambda:CreateFunction",
+            "lambda:CreateEventSourceMapping"
+        ],
+        "LambdaAddPermission":{
+            "lambda:AddPermission"
         },
-        'SetExistingDefaultPolicyVersion': {
-            'iam:SetDefaultPolicyVersion': True
-        },
-        'CreateEC2WithExistingIP': {
-            'iam:PassRole': True,
-            'ec2:RunInstances': True
-        },
-        'CreateAccessKey': {
-            'iam:CreateAccessKey': True
-        },
-        'CreateLoginProfile': {
-            'iam:CreateLoginProfile': True
-        },
-        'UpdateLoginProfile': {
-            'iam:UpdateLoginProfile': True
-        },
-        'AttachUserPolicy': {
-            'iam:AttachUserPolicy': True
-        },
-        'AttachGroupPolicy': {
-            'iam:AttachGroupPolicy': True
-        },
-        'AttachRolePolicy': {
-            'iam:AttachRolePolicy': True,
-            'sts:AssumeRole': True
-        },
-        'PutUserPolicy': {
-            'iam:PutUserPolicy': True
-        },
-        'PutGroupPolicy': {
-            'iam:PutGroupPolicy': True
-        },
-        'PutRolePolicy': {
-            'iam:PutRolePolicy': True,
-            'sts:AssumeRole': True
-        },
-        'AddUserToGroup': {
-            'iam:AddUserToGroup': True
-        },
-        'UpdateRolePolicyToAssumeIt': {
-            'iam:UpdateAssumeRolePolicy': True,
-            'sts:AssumeRole': True
-        },
-        'PassExistingRoleToNewLambdaThenInvoke': {
-            'iam:PassRole': True,
-            'lambda:CreateFunction': True,
-            'lambda:InvokeFunction': True
-        },
-        'PassExistingRoleToNewLambdaThenTriggerWithNewDynamo': {
-            'iam:PassRole': True,
-            'lambda:CreateFunction': True,
-            'lambda:CreateEventSourceMapping': True,
-            'dynamodb:CreateTable': True,
-            'dynamodb:PutItem': True
-        },
-        'PassExistingRoleToNewLambdaThenTriggerWithExistingDynamo': {
-            'iam:PassRole': True,
-            'lambda:CreateFunction': True,
-            'lambda:CreateEventSourceMapping': True
-        },
-        'PassExistingRoleToNewGlueDevEndpoint': {
-            'iam:PassRole': True,
-            'glue:CreateDevEndpoint': True
-        },
-        'UpdateExistingGlueDevEndpoint': {
-            'glue:UpdateDevEndpoint': True
-        },
-        'PassExistingRoleToCloudFormation': {
-            'iam:PassRole': True,
-            'cloudformation:CreateStack': True
-        },
-        'PassExistingRoleToNewDataPipeline': {
-            'iam:PassRole': True,
-            'datapipeline:CreatePipeline': True
-        },
-        'EditExistingLambdaFunctionWithRole': {
-            'lambda:UpdateFunctionCode': True
-        },
-        'CreateCodestarProjectFromTemplate': {
-            'codestar:CreateProjectFromTemplate': True
-        },
-        'PassRoleToNewCodestarProject': {
-            'codestar:CreateProject': True,
-            'iam:PassRole': True
-        },
-        'AssociateTeammemberToCodestarProject': {
-            'codestar:CreateProject': True,
-            'codestar:AssociateTeamMember': True
-        },
-        'PassRoleToNewSagemakerBook': {
-            'iam:PassRole': True,
-            'sagemaker:CreateNotebookInstance': True,
-            'sagemaker:CreatePresignedNotebookInstanceUrl': True
-        },
-        'AccessExistingSagemakerBook': {
-            'sagemaker:CreatePresignedNotebookInstanceUrl': True
-        },
-        'GetFederationTokenID': {
-            'sts:GetFederationToken': True
-        }
-    }
-    import re
+        "AddLayerVersionPermission": [
+            "lambda:AddLayerVersionPermission"
+        ],
+        "EditExistingLambdaFunctionWithRole": [
+            "lambda:UpdateFunctionCode"
+        ],
+        "UpdateFunctionConfiguration": [
+            "lambda:UpdateFunctionConfiguration"
+        ],
+
+
+        #LightSail
+        "GetLightsailSSHKeys": [
+            "lightsail:DownloadDefaultKeyPair"
+        ],
+        "GenerateLightsailSSHKeys": [
+            "lightsail:GetInstanceAccessDetails"
+        ],
+        "LightsailCreateBucketKey": [
+            "lightsail:CreateBucketAccessKey"
+        ],
+        "LightsailDBAccess": [
+            "lightsail:GetRelationalDatabaseMasterUserPassword"
+        ],
+        "LightsailChangePasswordRelationalDatabase": [
+            "lightsail:UpdateRelationalDatabase"
+        ],
+        "LightsailOpenPorts":[
+            "lightsail:OpenInstancePublicPorts"
+        ],
+
+        "LightsailPutInstancePublicPorts": [
+            "lightsail:OpenInstancePublicPorts"
+        ],
+        "LightsailGiveAccessToBucket": [
+            [
+                "lightsail:SetResourceAccessForBucket",
+                "lightsail:UpdateBucket"
+            ]
+        ],
+        "LightsailECRGrantAccess": [
+            "lightsail:UpdateContainerService"
+        ],
+        "LightsailSubdomainTakeover": [
+            [ 
+                "lightsail:CreateDomainEntry",
+                "lightsail:UpdateDomainEntry"
+            ]
+        ],
+
+        # Mediapackage
+        "MediapackageChannelChangePassword":[
+            "mediapackage:RotateChannelCredentials"
+            "mediapackage:RotateIngestEndpointCredentials"
+        ],
+
+        # MQ
+        "ActiveMQCreateUser1": [
+            "mq:ListBrokers",
+            "mq:CreateUser"
+        ],
+        "ActiveMQCreateUser2": [
+            "mq:ListBrokers",
+            "mq:ListUsers",
+            "mq:UpdateUser"
+        ],
+        "MQChangeLDAPConfiguration": [
+            "mq:ListBrokers",
+            "mq:UpdateBroker"
+        ],
+
+        # MSK
+        "MSKAccessKafkaVPC": [
+            "msk:ListClusters",
+            "msk:UpdateSecurity"
+        ],
+
+        # RDS
+        "RDSChangeMasterPassword": [
+            "rds:ModifyDBInstance"
+        ],
+
+        "RDSConnectToDBInstance": [
+            "rds-db:connect"
+        ],
+
+        "RDSAddRoleToInstance": [
+            "rds:AddRoleToDBCluster",
+            "iam:PassRole"
+        ],
+
+        "RDSCreateDBInstance": [
+            "rds:CreateDBInstance"
+        ],
+
+        "RDSCreateInstanceWithRole": [
+            "rds:CreateDBInstance",
+            "iam:PassRole"
+        ],
+        "RDSAddRoleToExistingInstance": [
+            "rds:AddRoleToDBInstance",
+            "iam:PassRole"
+        ],
+
+        # Redshift
+        "RedshiftGetClusterCredential": [
+            "redshift:DescribeClusters",
+            [
+                "redshift:GetClusterCredentialsWithIAM",
+                "redshift:GetClusterCredentials"
+            ]
+        ],
+        "RedshiftModifyClusterCredential": [
+            "redshift:DescribeClusters",
+            "redshift:ModifyCluster"
+        ],
+
+        # SNS
+
+        "SNSSendMessage": [
+            "sns:Publish"
+        ],
+        "SNSSubscribe":[
+            "sns:Subscribe"
+        ],
+        "SNSAddPermission": [
+            "sns:AddPermission"
+        ],
+
+        # SQS
+        "SQSAccessQueue": [
+            "sqs:AddPermission"
+        ],
+        "SQSSendMessage": [
+            "sqs:SendMessage",
+            "sqs:SendMessageBatch"
+        ],
+
+        "SQSDeleteMessage": [
+            "sqs:ReceiveMessage",
+            "sqs:DeleteMessage",
+            "sqs:ChangeMessageVisibility"
+        ],
+
+        # SSO
+        "IdentityStoreAddUserToGroup":[
+            "identitystore:CreateGroupMembership"
+        ],
+
+        "SSOGrantExtraPermissionToExistingPermissionSet": [
+            [
+                "sso:PutInlinePolicyToPermissionSet",
+                "sso:AttachCustomerManagedPolicyReferenceToPermissionSet",
+                "sso:AttachManagedPolicyToPermissionSet"
+            ],
+            "sso:ProvisionPermissionSet"
+        ],
+
+        "SSOCreateAccountAssignment": [
+            "sso:CreateAccountAssignment"
+        ],
+
+        "SSODetachOrDeletePolicy":[
+            [
+                "sso:DetachManagedPolicyFromPermissionSet",
+                "sso:DetachCustomerManagedPolicyReferenceFromPermissionSet",
+                "sso:DeleteInlinePolicyFromPermissionSet",
+                "sso:DeletePermissionBoundaryFromPermissionSet"
+            ]
+        ],
+
+        # S3
+
+        "S3PutObject": [
+            "s3:PutObject",
+            "s3:GetObject"
+        ],
+
+        "S3PutBucketPolicy": [
+            "s3:PutBucketPolicy"
+        ],
+        "S3ChangeBucketACL": [
+            "s3:GetBucketAcl",
+            "s3:PutBucketAcl"
+        ],
+
+        "S3ChangeObjectACL": [
+            "s3:GetObjectAcl",
+            "s3:PutObjectAcl"
+        ],
+        "S3PutACLToSpecifiedVersion": [
+            "s3:GetObjectAcl",
+            "s3:PutObjectVersionAcl"
+        ],
+
+        # SageMaker
+        "SagemakerNotebookPassRole": [
+            "iam:PassRole",
+            "sagemaker:CreateNotebookInstance",
+            "sagemaker:CreatePresignedNotebookInstanceUrl"
+        ],
+        "SagemakerGetNotebookURLAccess": [
+            "sagemaker:CreatePresignedNotebookInstanceUrl"
+        ],
+        "SagemakerJobPassrole": [
+            [
+                "sagemaker:CreateProcessingJob",
+                "sagemaker:CreateTrainingJob",
+                "CreateHyperParameterTuningJob"
+            ],
+            "iam:PassRole"
+        ],
+
+
+        # Secret manager privesc
+
+        "SecretManagerGetValue": [
+            "secretsmanager:GetSecretValue"
+        ],
+        "SecretPolicyGiveAccess": [
+            "secretsmanager:GetResourcePolicy",
+            "secretsmanager:PutResourcePolicy"
+        ],
+
+        # SSM
+
+        "SSMSendCommand": [
+            "ssm:SendCommand"
+        ],
+
+        "SSMStartSession": [
+            "ssm:StartSession"
+        ],
+
+
+        "SSMResumeSession": [
+            "ssm:ResumeSession"
+        ],
+
+        "SSMReadParameters": [
+            "ssm:DescribeParameters",
+            [
+                "ssm:GetParameter",
+                "ssm:GetParameters"
+            ]
+        ],
+
+        "SSMListCommand": [
+            "ssm:ListCommands"
+        ],
+
+        "SSMListCommandsAndGetOutput": [
+            "ssm:GetCommandInvocation",
+            [
+                "ssm:ListCommandInvocations",
+                "ssm:ListCommands"
+            ]
+        ],
+
+        # STS
+
+        "STSAssumeRole":[
+            "sts:AssumeRole"
+        ],
+        "STSSAMLAssumeRole": [
+            "sts:AssumeRoleWithSAML"
+        ],
+        "STSWebIDAssumeRole": [
+            "sts:AssumeRoleWithWebIdentity"
+        ],
+        "GetFederationTokenID": [
+            "sts:GetFederationToken"
+        ],
+
+        # WorkDoc
+        "WorkdocsCreateUser": [
+            "workdocs:CreateUser"
+        ],
+        "WorkdocsGetDocumet": [
+            "workdocs:GetDocument"
+        ],
+        "WorkdocsAddResourcePermission": [
+            "workdocs:AddResourcePermissions"
+        ],
+        "WorkdocsAddUserToGroup": [
+            "workdocs:AddUserToGroup"
+        ],
+
+
+        # API calls that return credentials
+        "ChimeCreateAPIKey": ["chime:createapikey"],
+    
+        "CodePipelinePollForJobs": ["codepipeline:pollforjobs"],
+        
+        "CognitoGetOpenIDToken": ["cognito-identity:getopenidtoken"],
+        "CognitoGetOpenIDTokenForDeveloper": ["cognito-identity:getopenidtokenfordeveloperidentity"],
+        "CognitoGetCredentialsForIdentity": ["cognito-identity:getcredentialsforidentity"],
+        
+        "ConnectGetFederationToken": ["connect:getfederationtoken"],
+        "ConnectGetFederationTokens": ["connect:getfederationtokens"],
+        
+        "ECRGetAuthorizationToken": ["ecr:getauthorizationtoken"],
+        
+        "GameLiftRequestUploadCredentials": ["gamelift:requestuploadcredentials"],
+        
+        "IAMCreateAccessKey": ["iam:createaccesskey"],
+        "IAMCreateLoginProfile": ["iam:createloginprofile"],
+        "IAMCreateOrResetServiceSpecificCredential": [
+            [
+                "iam:createservicespecificcredential", 
+                "iam:resetservicespecificcredential"
+            ]
+        ],
+        "IAMUpdateAccessKey": ["iam:updateaccesskey"],
+
+        "LightSailGetInstanceAccessDetails": ["lightsail:getinstanceaccessdetails"],
+        "LightSailGetRelationalDatabasePassword": ["lightsail:getrelationaldatabasemasteruserpassword"],
+
+        "RDSDBConnect": ["rds-db:connect"],
+        
+        "RedShiftGetClusterCredentials": ["redshift:getclustercredentials"],
+        
+        "SSOGetRoleCredentials": ["sso:getrolecredentials"],
+        
+        "MediaPackageRotateChannelCredentials": ["mediapackage:rotatechannelcredentials"],
+        "MediaPackageRotateIngestEndpointCredentials": ["mediapackage:rotateingestendpointcredentials"],
+        
+        "STSGetFederationToken": ["sts:getfederationtoken"],
+        "STSGetSessionToken": ["sts:getsessiontoken"]
+    }  
+
+
+    # Filter escalation methods if required
+    privileges_to_filter = args.filter_privilege
+    if privileges_to_filter:
+        escalation_methods = filter_escalation_methods(escalation_methods=escalation_methods, filter_patterns=privileges_to_filter)
+
+    # Extract all permissions from the combinations
+    all_perms = set()
+    for combination in escalation_methods.values():
+        for perm in combination:
+            permissions_to_add = array_or_string_to_array_of_strings(perm)
+            for permission in permissions_to_add:
+                all_perms.add(permission)
+
     for user in users:
         print('User: {}'.format(user['UserName']))
         checked_perms = {'Allow': {}, 'Deny': {}}
@@ -350,36 +1059,51 @@ def main(args):
                                 if pattern.search(perm) is not None:
                                     checked_perms[effect][perm] = user['Permissions'][effect][user_perm]
 
+        # Ditch each escalation method that has been confirmed not to be possible
         checked_methods = {
             'Potential': [],
             'Confirmed': []
         }
 
-        # Ditch each escalation method that has been confirmed not to be possible
-        for method in escalation_methods:
+        for method in escalation_methods.keys():
             potential = True
             confirmed = True
-            for perm in escalation_methods[method]:
-                if perm not in checked_perms['Allow']: # If this permission isn't Allowed, then this method won't work
+            permissions = escalation_methods[method]  # Get the permissions for the method
+
+            for permission_options in permissions:
+                permissions_options_to_check = array_or_string_to_array_of_strings(permission_options)
+
+                option_confirmed = False
+                option_potential = False
+                for p in permissions_options_to_check:
+                    if p in checked_perms['Allow'] and p not in checked_perms['Deny']:
+                        option_potential = True
+                        if checked_perms['Allow'][p] == ['*']:
+                            option_confirmed = True
+
+                if not option_confirmed:
+                    confirmed = False
+                if not option_potential:  # If no potential, then no need to continue checking
                     potential = confirmed = False
                     break
-                elif perm in checked_perms['Deny'] and perm in checked_perms['Allow']: # Permission is both Denied and Allowed, leave as potential, not confirmed
-                    confirmed = False
-                elif perm in checked_perms['Allow'] and perm not in checked_perms['Deny']: # It is Allowed and not Denied
-                    if not checked_perms['Allow'][perm] == ['*']:
-                        confirmed = False
-            if confirmed is True:
+
+
+            if confirmed:
                 print('  CONFIRMED: {}\n'.format(method))
                 checked_methods['Confirmed'].append(method)
-            elif potential is True:
+            elif potential:
                 print('  POTENTIAL: {}\n'.format(method))
                 checked_methods['Potential'].append(method)
+
         user['CheckedMethods'] = checked_methods
-        if checked_methods['Potential'] == [] and checked_methods['Confirmed'] == []:
+
+        if not checked_methods['Potential'] and not checked_methods['Confirmed']:
             print('  No methods possible.\n')
 
+
+
     now = time.time()
-    headers = 'CreateNewPolicyVersion,SetExistingDefaultPolicyVersion,CreateEC2WithExistingIP,CreateAccessKey,CreateLoginProfile,UpdateLoginProfile,AttachUserPolicy,AttachGroupPolicy,AttachRolePolicy,PutUserPolicy,PutGroupPolicy,PutRolePolicy,AddUserToGroup,UpdateRolePolicyToAssumeIt,PassExistingRoleToNewLambdaThenInvoke,PassExistingRoleToNewLambdaThenTriggerWithNewDynamo,PassExistingRoleToNewLambdaThenTriggerWithExistingDynamo,PassExistingRoleToNewGlueDevEndpoint,UpdateExistingGlueDevEndpoint,PassExistingRoleToCloudFormation,PassExistingRoleToNewDataPipeline,EditExistingLambdaFunctionWithRole'
+
     file = open('all_user_privesc_scan_results_{}.csv'.format(now), 'w+')
     for user in users:
         if 'admin' in user['CheckedMethods']:
@@ -387,7 +1111,7 @@ def main(args):
         else:
             file.write(',{}'.format(user['UserName']))
     file.write('\n')
-    for method in headers.split(','):
+    for method in escalation_methods.keys():
         file.write('{},'.format(method))
         for user in users:
             if method in user['CheckedMethods']['Confirmed']:
@@ -399,6 +1123,13 @@ def main(args):
         file.write('\n')
     file.close()
     print('Privilege escalation check completed. Results stored to ./all_user_privesc_scan_results_{}.csv'.format(now))
+
+def array_or_string_to_array_of_strings(perm):
+    if isinstance(perm, str):
+        return [perm]  # Single option
+    else:
+        return perm  # Multiple choices
+
 
 # https://stackoverflow.com/a/24893252
 def remove_empty_from_dict(d):
@@ -555,6 +1286,42 @@ def parse_document(document, user):
                 user['Permissions']['Allow'][statement['NotAction']] = list(set(user['Permissions']['Allow'][statement['NotAction']])) # Remove duplicate resources
     return user
 
+
+def filter_escalation_methods(escalation_methods, filter_patterns):
+    """
+    Filter out escalation methods based on given regex patterns.
+
+    :param escalation_methods: Dictionary of escalation methods.
+    :param filter_patterns: List of regex patterns to filter out.
+    :return: Filtered dictionary of escalation methods.
+    """
+    filtered_methods = {}
+
+    def matches_any_pattern(privilege):
+        return any(re.search(pattern, privilege, re.IGNORECASE) for pattern in filter_patterns)
+
+    for method, privileges in escalation_methods.items():
+        should_add = True
+        new_privileges = []
+        
+        for priv in privileges:
+            if isinstance(priv, list): # Handling either-or case
+                priv = [p for p in priv if not matches_any_pattern(p)] # Removing privileges that match any regex pattern
+                if not priv: # If list is empty after removal, method should not be added
+                    should_add = False
+                    break
+                new_privileges.append(priv)
+            else:
+                if matches_any_pattern(priv): # Handling single privilege case
+                    should_add = False
+                    break
+                new_privileges.append(priv)
+        
+        if should_add:
+            filtered_methods[method] = new_privileges
+            
+    return filtered_methods
+
 if __name__ == '__main__':
     parser = argparse.ArgumentParser(description='This script will fetch permissions for a set of users and then scan for permission misconfigurations to see what privilege escalation methods are possible. Available attack paths will be output to a .csv file in the same directory.')
     parser.add_argument('--all-users', required=False, default=False, action='store_true', help='Run this module against every user in the account.')
@@ -562,6 +1329,8 @@ if __name__ == '__main__':
     parser.add_argument('--access-key-id', required=False, default=None, help='The AWS access key ID to use for authentication.')
     parser.add_argument('--secret-key', required=False, default=None, help='The AWS secret access key to use for authentication.')
     parser.add_argument('--session-token', required=False, default=None, help='The AWS session token to use for authentication, if there is one.')
+    parser.add_argument('--filter-privilege', '-f', action='append', help='Privileges to filter out. Can be used multiple times. Supports regex and is case insensitive.', default=[])
+
 
     args = parser.parse_args()
     main(args)
