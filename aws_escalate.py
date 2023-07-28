@@ -6,6 +6,8 @@ import boto3, argparse, time
 import re
 
 def main(args):
+    now = time.time()
+
     access_key_id = args.access_key_id
     secret_access_key = args.secret_key
     session_token = args.session_token
@@ -1025,6 +1027,7 @@ def main(args):
     }  
 
 
+
     # Filter escalation methods if required
     privileges_to_filter = args.filter_privilege
     if privileges_to_filter:
@@ -1038,6 +1041,8 @@ def main(args):
             for permission in permissions_to_add:
                 all_perms.add(permission)
 
+    proof_file_name = 'all_user_privesc_scan_proof_{}.txt'.format(now)
+    proof_file = open(proof_file_name, 'w+')
     for user in users:
         print('User: {}'.format(user['UserName']))
         checked_perms = {'Allow': {}, 'Deny': {}}
@@ -1059,18 +1064,20 @@ def main(args):
                                 if pattern.search(perm) is not None:
                                     checked_perms[effect][perm] = user['Permissions'][effect][user_perm]
 
-        # Ditch each escalation method that has been confirmed not to be possible
         checked_methods = {
             'Potential': [],
             'Confirmed': []
         }
 
         for method in escalation_methods.keys():
+            proof_string = ""
             potential = True
             confirmed = True
             permissions = escalation_methods[method]  # Get the permissions for the method
 
             for permission_options in permissions:
+                # permission option because we can have 2 options in an array
+                # we change strings into an array as well:
                 permissions_options_to_check = array_or_string_to_array_of_strings(permission_options)
 
                 option_confirmed = False
@@ -1080,6 +1087,10 @@ def main(args):
                         option_potential = True
                         if checked_perms['Allow'][p] == ['*']:
                             option_confirmed = True
+                        else:
+                            proof_string+=f"User {user['UserName']} marked with potential method {method} because:\n"
+                            proof_string+=f"Permission {p} is allowed with arn:\n"
+                            proof_string+=f"{checked_perms['Allow'][p]}\n"
 
                 if not option_confirmed:
                     confirmed = False
@@ -1092,6 +1103,8 @@ def main(args):
                 print('  CONFIRMED: {}\n'.format(method))
                 checked_methods['Confirmed'].append(method)
             elif potential:
+                if(args.proof):
+                    proof_file.write(proof_string)
                 print('  POTENTIAL: {}\n'.format(method))
                 checked_methods['Potential'].append(method)
 
@@ -1099,10 +1112,11 @@ def main(args):
 
         if not checked_methods['Potential'] and not checked_methods['Confirmed']:
             print('  No methods possible.\n')
+    #end of user parsing
+    proof_file.close()
 
 
 
-    now = time.time()
 
     file = open('all_user_privesc_scan_results_{}.csv'.format(now), 'w+')
     for user in users:
@@ -1123,6 +1137,9 @@ def main(args):
         file.write('\n')
     file.close()
     print('Privilege escalation check completed. Results stored to ./all_user_privesc_scan_results_{}.csv'.format(now))
+    if(args.proof):
+        print(f'Proof stored to {proof_file_name}')
+
 
 def array_or_string_to_array_of_strings(perm):
     if isinstance(perm, str):
@@ -1330,6 +1347,8 @@ if __name__ == '__main__':
     parser.add_argument('--secret-key', required=False, default=None, help='The AWS secret access key to use for authentication.')
     parser.add_argument('--session-token', required=False, default=None, help='The AWS session token to use for authentication, if there is one.')
     parser.add_argument('--filter-privilege', '-f', action='append', help='Privileges to filter out. Can be used multiple times. Supports regex and is case insensitive.', default=[])
+    parser.add_argument('-p', '--proof', required=False, action='store_true', help='Path to the proof file. Will contain the arns of the potential privesc methods')
+
 
 
     args = parser.parse_args()
